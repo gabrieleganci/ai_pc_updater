@@ -1,0 +1,23 @@
+.banner {
+  margin-top: 1.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.08);
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.icon {
+  font-size: 1rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.text {
+  margin: 0;
+  font-size: 0.85rem;
+  color: #fde68a;
+  line-height: 1.5;
+}

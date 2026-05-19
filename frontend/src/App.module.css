@@ -1,0 +1,68 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(
+      ellipse 120% 80% at 50% -20%,
+      rgba(124, 58, 237, 0.12) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 80% 50% at 100% 50%,
+      rgba(0, 212, 255, 0.06) 0%,
+      transparent 45%
+    ),
+    var(--color-bg);
+}
+
+.healthRow {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0.35rem clamp(1rem, 4vw, 2rem) 0;
+}
+
+.healthOk,
+.healthBad {
+  font-size: 0.75rem;
+  font-family: var(--font-mono);
+}
+
+.healthOk {
+  color: var(--color-success);
+}
+
+.healthBad {
+  color: var(--color-warning);
+}
+
+.main {
+  flex: 1;
+  padding-bottom: 2rem;
+}
+
+.errorBanner {
+  max-width: 1100px;
+  margin: 0 auto 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.1);
+  color: #fecaca;
+  font-size: 0.9rem;
+}
+
+.footerNote {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 clamp(1rem, 4vw, 2rem);
+}
+
+.footerNote > * {
+  margin-top: 0;
+}
+
+@media (min-width: 320px) and (max-width: 400px) {
+  .healthRow {
+    font-size: 0.7rem;
+  }
+}
