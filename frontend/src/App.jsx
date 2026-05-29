@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { analyzeBuild, fetchHealth } from "./api.js";
+import { analyzeBuild } from "./api.js";
+import { loadModel, isModelLoaded } from "./llm.js";
 import BuildForm from "./components/BuildForm.jsx";
 import DisclaimerBanner from "./components/DisclaimerBanner.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
 import Header from "./components/Header.jsx";
 import LoadingState from "./components/LoadingState.jsx";
+import ModelLoadingScreen from "./components/ModelLoadingScreen.jsx";
 import ResultsReport from "./components/ResultsReport.jsx";
 import styles from "./App.module.css";
 
@@ -13,16 +15,45 @@ export default function App() {
   const [result, setResult] = useState(null);
   const [buildSnapshot, setBuildSnapshot] = useState(null);
   const [apiError, setApiError] = useState("");
-  const [health, setHealth] = useState(null);
+  const [modelReady, setModelReady] = useState(false);
+  const [modelProgress, setModelProgress] = useState(null);
+  const [modelError, setModelError] = useState(null);
+  const [pendingPayload, setPendingPayload] = useState(null);
   const abortRef = useRef(null);
 
+  function startModelLoad() {
+    setModelError(null);
+    setModelProgress(null);
+    if (!navigator.gpu) {
+      setModelError("WebGPU non è supportato da questo browser. Usa Chrome 113+, Edge 113+ o Opera 99+.");
+      return;
+    }
+    loadModel((report) => {
+      setModelProgress({ ...report });
+    })
+      .then(() => {
+        setModelReady(true);
+        setModelProgress(null);
+      })
+      .catch((err) => {
+        setModelError(err.message);
+        setModelProgress(null);
+      });
+  }
+
   useEffect(() => {
-    fetchHealth()
-      .then(setHealth)
-      .catch(() => setHealth({ ollama: false, available: false, model: "gemma4" }));
+    startModelLoad();
   }, []);
 
-  const onSubmit = useCallback(async (payload) => {
+  useEffect(() => {
+    if (modelReady && pendingPayload) {
+      const payload = pendingPayload;
+      setPendingPayload(null);
+      runAnalysis(payload);
+    }
+  }, [modelReady, pendingPayload]);
+
+  const runAnalysis = useCallback(async (payload) => {
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
@@ -44,14 +75,14 @@ export default function App() {
       if (json.success && json.data) {
         setResult(json.data);
       } else {
-        setApiError(json.error || "Analysis failed.");
+        setApiError(json.error || "Analisi fallita.");
       }
     } catch (e) {
       if (e.name === "AbortError") return;
       const msg =
         e?.payload?.error ||
         e?.message ||
-        "Could not complete analysis. Check that Ollama is running with the gemma4 model.";
+        "Analisi non completata. Il modello potrebbe essere lento su questa GPU. Riprova.";
       setApiError(msg);
     } finally {
       if (abortRef.current === ac) abortRef.current = null;
@@ -59,25 +90,28 @@ export default function App() {
     }
   }, []);
 
+  const onSubmit = useCallback(async (payload) => {
+    if (!modelReady) {
+      setPendingPayload(payload);
+      return;
+    }
+    runAnalysis(payload);
+  }, [modelReady, runAnalysis]);
+
+  if (!modelReady) {
+    return (
+      <ModelLoadingScreen
+        progress={modelProgress}
+        error={modelError}
+        onRetry={modelError ? startModelLoad : null}
+      />
+    );
+  }
+
   return (
     <ErrorBoundary>
       <div className={styles.app}>
         <Header />
-        {health ? (
-          <div className={styles.healthRow}>
-            <span
-              className={
-                health.ollama && health.available
-                  ? styles.healthOk
-                  : styles.healthBad
-              }
-            >
-              Ollama: {health.ollama ? "reachable" : "unreachable"}
-              {" · "}
-              Model {health.model}: {health.available ? "available" : "missing"}
-            </span>
-          </div>
-        ) : null}
 
         <main className={styles.main}>
           <BuildForm onSubmit={onSubmit} disabled={loading} />

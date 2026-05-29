@@ -1,54 +1,27 @@
-/**
- * @typedef {Object} CurrentBuild
- * @property {string} cpu
- * @property {string} gpu
- * @property {string} ram
- * @property {string} motherboard
- * @property {string} psu
- * @property {string} [storage]
- * @property {string} [case]
- */
+import { loadModel, generateAnalysis } from "./llm.js";
+import { buildUserPrompt } from "./prompt.js";
+import { parseAndValidateModelJson } from "./validators.js";
 
-/**
- * @typedef {Object} AnalyzePayload
- * @property {CurrentBuild} current_build
- * @property {string} upgrade_target
- * @property {string} [use_case]
- * @property {number} [budget_eur]
- */
-
-/**
- * @param {AnalyzePayload} payload
- * @param {AbortSignal} [signal]
- */
 export async function analyzeBuild(payload, signal) {
-  const res = await fetch("/api/analyze", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-    signal,
+  const prompt = buildUserPrompt({
+    cpu: payload.current_build.cpu,
+    gpu: payload.current_build.gpu,
+    ram: payload.current_build.ram,
+    motherboard: payload.current_build.motherboard,
+    psu: payload.current_build.psu,
+    storage: payload.current_build.storage,
+    case: payload.current_build.case,
+    upgrade_target: payload.upgrade_target,
+    use_case: payload.use_case,
+    budget_eur: payload.budget_eur,
   });
-  let json = {};
-  try {
-    json = await res.json();
-  } catch {
-    json = {};
-  }
-  if (!res.ok) {
-    const err = new Error(json.error || res.statusText || "Request failed");
-    err.cause = json;
-    /** @type {any} */ (err).errorType = json.error_type;
-    /** @type {any} */ (err).payload = json;
-    throw err;
-  }
-  return json;
-}
 
-/**
- * @returns {Promise<{ status: string; ollama: boolean; model: string; available: boolean }>}
- */
-export async function fetchHealth() {
-  const res = await fetch("/api/health");
-  if (!res.ok) throw new Error("Health check failed");
-  return res.json();
+  const raw = await generateAnalysis(prompt, signal);
+  const data = parseAndValidateModelJson(raw, payload.current_build);
+
+  if (data._hallucination_flags) {
+    console.warn("[Hallucination Detected]", data._hallucination_flags);
+  }
+  const { _hallucination_flags, ...cleanData } = data;
+  return { success: true, data: cleanData };
 }

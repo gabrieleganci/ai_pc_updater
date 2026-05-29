@@ -2,7 +2,7 @@ import { Loader2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import styles from "./LoadingState.module.css";
 
-const MAX_SECONDS = 60;
+const MAX_SECONDS = 120;
 
 export default function LoadingState() {
   const [progress, setProgress] = useState(0);
@@ -28,7 +28,7 @@ export default function LoadingState() {
           <div className={styles.pulseRing} />
           <Loader2 className={styles.spinner} strokeWidth={2} aria-hidden />
         </div>
-        <p className={styles.message}>Gemma 4 is analyzing your build...</p>
+        <p className={styles.message}>Gemma 4 sta analizzando la tua configurazione...</p>
         <div className={styles.barOuter}>
           <div
             className={styles.barInner}
@@ -36,7 +36,7 @@ export default function LoadingState() {
           />
         </div>
         <p className={styles.hint}>
-          This can take up to {MAX_SECONDS} seconds. Please keep this tab open.
+          Può richiedere fino a {MAX_SECONDS} secondi. Tieni aperta questa scheda.
         </p>
         <div className={styles.skeletonGrid}>
           {[1, 2, 3].map((i) => (

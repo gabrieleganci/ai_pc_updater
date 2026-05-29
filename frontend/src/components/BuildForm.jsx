@@ -167,11 +167,13 @@ export default function BuildForm({ onSubmit, disabled }) {
 
           <div className={styles.row2}>
             <label className={styles.fieldFull}>
-              <span className={styles.label}>Use case (optional)</span>
+              <span className={styles.label}>
+                {form.upgrade_target} — scenario d'uso (opzionale)
+              </span>
               <input
                 className={styles.input}
                 type="text"
-                placeholder='e.g. "Gaming 1440p"'
+                placeholder='es. Gaming 1440p, Montaggio video 4K, Sviluppo AI'
                 value={form.use_case}
                 onChange={(e) => handleChange("use_case", e.target.value)}
                 disabled={disabled}

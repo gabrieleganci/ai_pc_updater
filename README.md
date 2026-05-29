@@ -1,170 +1,131 @@
 # PC Build Advisor
 
-> An AI-powered hardware upgrade advisor that analyzes your current PC configuration and provides intelligent upgrade recommendations with compatibility analysis and detailed reasoning — all running locally via Ollama and Gemma 4.
+> Analizza la tua configurazione PC e ricevi raccomandazioni di upgrade intelligenti — tutto nel browser tramite WebGPU, senza server né installazioni backend.
 
 ---
 
-## Overview
+## Come funziona
 
-PC Build Advisor helps PC enthusiasts and IT technicians make informed hardware upgrade decisions. Instead of manually scouring forums, review sites, and compatibility checkers, users simply input their current build, select a component to upgrade, and receive a structured report with:
+Inserisci le specifiche del tuo PC, seleziona il componente da aggiornare, e un modello AI (Gemma 2 2B) eseguito interamente nel browser via WebGPU genera un report con:
 
-- **Compatibility analysis** — checks if the new component works with existing hardware
-- **Bottleneck detection** — identifies performance-limiting components
-- **Dependent upgrades** — flags other components that may also need upgrading
-- **Motivated recommendations** — 2–3 upgrade options across budget/medium/high tiers
-- **Warnings & disclaimers** — compatibility risks clearly called out
+- **Analisi compatibilità** — socket, TDP, spazio case, interfacce
+- **Rilevamento bottleneck** — CPU bound, GPU bound, RAM, storage
+- **Raccomandazioni motivate** — 2-3 opzioni per fascia budget/medio/alto
+- **Upgrade dipendenti** — componenti da cambiare per supportare l'upgrade
+- **Avvertenze** — rischi e informazioni mancanti
 
----
-
-## How It Works
-
-```
-[User enters build specs + upgrade target]
-       ↓
-[React frontend sends JSON payload]
-       ↓
-[Python backend structures the request]
-       ↓
-[Ollama / Gemma 4 analyzes compatibility]
-       ↓
-[Validator checks AI output format & coherence]
-       ↓
-[Formatted report returned to user]
-```
+Nessun dato lascia il tuo computer. Zero server. Zero API key.
 
 ---
 
-## Tech Stack
+## Requisiti
 
-| Area             | Choice                        | Rationale                              |
-| ---------------- | ----------------------------- | -------------------------------------- |
-| Frontend         | React                         | Mature ecosystem, component-based UI   |
-| Backend          | Python (Flask/FastAPI)        | Native Ollama client integration       |
-| AI Provider      | Ollama (local)                | Zero API costs, data stays local       |
-| AI Model         | Gemma 4 (Q4_K_M quantized)    | Best accuracy/resource tradeoff        |
-| Database         | JSON (local file)             | Lightweight, no DBMS required          |
-
-All data stays **local** — no personal information is collected or sent to external services.
+- **Browser**: Chrome 113+, Edge 113+, Opera 99+ (WebGPU)
+- **GPU**: 4+ GB VRAM raccomandati (il modello occupa ~2.5 GB di VRAM)
+- **Spazio disco**: ~2 GB liberi per il download una tantum del modello
+- **Internet**: solo per il primo avvio (download del modello); poi funziona offline
 
 ---
 
-## MVP Features
+## Avvio rapido (su qualsiasi PC)
 
-- **Build input form** — CPU, GPU, RAM, motherboard, PSU, storage, case
-- **Upgrade target selection** — choose which component to analyze
-- **AI-powered analysis** — compatibility, bottlenecks, and dependencies via Gemma 4
-- **Structured output** — recommendations with motivations and compatibility notes
-- **Disclaimer** — clear warning to verify compatibility before purchasing
-
-### Out of Scope (v1)
-
-- User accounts & build saving
-- E-commerce integration
-- Performance benchmarking
-- Mobile app (responsive design covers mobile)
-- Community reviews
-- Price history tracking
-
----
-
-## Getting Started
-
-### Prerequisites
-
-- [Ollama](https://ollama.ai) installed and running
-- Gemma 4 model pulled (`ollama pull gemma4`)
-- Python 3.10+
-- Node.js 18+
-
-### Installation
+Clona o copia la cartella `frontend/`, poi:
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/pc-build-advisor.git
-cd pc-build-advisor
-
-# Backend setup
-cd backend
-pip install -r requirements.txt
-
-# Frontend setup
-cd ../frontend
-npm install
-```
-
-### Running
-
-```bash
-# Start Ollama (if not already running)
-ollama serve
-
-# Start backend
-cd backend
-python app.py
-
-# Start frontend (separate terminal)
 cd frontend
-npm start
+npm install
+npm run dev
 ```
 
-Set `OLLAMA_HOST=http://localhost:11434` in your environment if needed.
+Apri **`http://localhost:5173/`** nel browser.
 
----
+Al primo avvio vedrai una schermata **"Preparazione PC Build Advisor"** con una barra di progresso — il modello AI (~2 GB) viene scaricato da Hugging Face e cachato nel browser. Le successive aperture saranno immediate.
 
-## API Payload Example
+### Build produzione (static hosting)
 
-```json
-{
-  "current_build": {
-    "cpu": "Intel i5-12400F",
-    "gpu": "NVIDIA RTX 3060",
-    "ram": "16GB DDR4 3200MHz",
-    "motherboard": "MSI B660M-A Pro",
-    "psu": "Corsair CV650 650W",
-    "storage": "Samsung 970 EVO 1TB",
-    "case": "NZXT H510"
-  },
-  "upgrade_target": "GPU",
-  "use_case": "Gaming 1440p",
-  "budget_eur": 800
-}
+```bash
+npm run build
 ```
 
----
-
-## Validation & Quality
-
-- **JSON schema validation** — AI output must match the expected structure
-- **Hallucination checking** — component names verified against a grounding database
-- **80% accuracy target** — manual review on a test set of 10 configurations
-- **Max 60s response time** — enforced timeout with retry logic
+Il contenuto della cartella `dist/` è un sito statico pronto per essere deployato su **GitHub Pages**, **Vercel**, **Netlify**, **Cloudflare Pages** o qualsiasi web server.
 
 ---
 
-## Error Handling
+## Per sviluppatori
 
-| Scenario                    | Behavior                              |
-| --------------------------- | ------------------------------------- |
-| Ollama unreachable          | Clear instructions to start Ollama    |
-| Model not found             | Command to pull the model             |
-| Invalid AI output           | Retry with reinforced prompt (max 2)  |
-| Missing required input      | Field-specific validation error       |
-| Request timeout (>60s)      | Retry suggestion                      |
+### Struttura del progetto
+
+```
+frontend/
+├── index.html              # Entry point + WebGPU detection
+├── vite.config.js          # Vite config
+├── package.json
+└── src/
+    ├── main.jsx            # React mount
+    ├── App.jsx             # Root component con model loading state
+    ├── App.module.css      # Stili root
+    ├── api.js              # Orchestrazione: prompt → modello → validatore
+    ├── llm.js              # WebLLM engine (caricamento + inferenza WebGPU)
+    ├── prompt.js           # Prompt di sistema professionale (italiano)
+    ├── validators.js       # Validatore JSON output AI
+    ├── styles/global.css   # Design tokens (dark theme)
+    └── components/
+        ├── BuildForm.jsx           # Form input configurazione
+        ├── LoadingState.jsx        # Stato analisi in corso
+        ├── ModelLoadingScreen.jsx  # Schermata download modello
+        ├── ResultsReport.jsx       # Report risultati
+        ├── BottleneckCard.jsx      # Card bottleneck
+        ├── RecommendationsCard.jsx # Card raccomandazioni
+        ├── DependentUpgradesCard.jsx # Card upgrade dipendenti
+        ├── WarningsCard.jsx        # Card avvertenze
+        ├── DisclaimerBanner.jsx    # Banner disclaimer
+        ├── ErrorBoundary.jsx       # Gestione errori React
+        └── Header.jsx              # Header app
+```
+
+### Comandi principali
+
+| Comando | Cosa fa |
+|---------|---------|
+| `npm run dev` | Avvia server di sviluppo su `localhost:5173` |
+| `npm run build` | Build di produzione in `dist/` |
+| `npm run preview` | Server locale per testare la build |
+
+### Flusso dati
+
+```
+BuildForm → api.js → prompt.js (costruisce prompt)
+                    → llm.js (inferenza WebGPU su Gemma 2 2B)
+                    → validators.js (valida output JSON)
+                    → ResultsReport (render risultati)
+```
+
+### Tecnologie
+
+- **Runtime AI**: [WebLLM](https://github.com/mlc-ai/web-llm) v0.2.84 (`@mlc-ai/web-llm`)
+- **Modello**: `gemma-2-2b-it-q4f32_1-MLC` (Google Gemma 2 2B, q4f32, ~2 GB)
+- **Frontend**: React 18 + Vite 6 + CSS Modules
+- **Icone**: Lucide React
+- **Hosting**: Statico (GitHub Pages, Vercel, Netlify, Cloudflare Pages)
 
 ---
 
-## Roadmap
+## Troubleshooting
 
-- **v1** — MVP with core upgrade analysis (current)
-- **v2** — User accounts, build saving, e-commerce links
-- **v3** — Performance benchmarking, price history tracking
+| Problema | Soluzione |
+|----------|-----------|
+| Schermata "WebGPU non supportato" | Usa Chrome/Edge 113+ o Opera 99+. Aggiorna il browser. |
+| Download modello non parte | Controlla la connessione. Il modello viene da Hugging Face CDN. |
+| Download modello fallito | Ricarica la pagina (Ctrl+F5). C'è un pulsante "Riprova". |
+| Analisi molto lenta | Chiudi altre schede/app che usano la GPU. Attendere fino a 120s. |
+| Pagina bianca all'apertura | Assicurati di usare `http://localhost:5173/` (non aprire il file diretto). |
 
 ---
 
-## License
+## Licenza
 
 MIT
 
 ---
 
-*Built with ❤️ by Gabriele Ganci — AI Projects Development, ITS ICT Academy Roma*
+*Built by Gabriele Ganci — AI Projects Development, ITS ICT Academy Roma*
