@@ -1,8 +1,9 @@
-import { CreateMLCEngine } from "@mlc-ai/web-llm";
+import { CreateWebWorkerMLCEngine } from "@mlc-ai/web-llm";
 
 const MODEL_ID = "gemma-2-2b-it-q4f32_1-MLC";
 
 let engine = null;
+let worker = null;
 let loadProgress = { loaded: 0, total: 0, text: "" };
 
 export function getLoadProgress() {
@@ -16,7 +17,11 @@ export function isModelLoaded() {
 export async function loadModel(onProgress) {
   if (engine) return engine;
 
-  engine = await CreateMLCEngine(MODEL_ID, {
+  worker = new Worker(new URL("./worker.js", import.meta.url), {
+    type: "module",
+  });
+
+  engine = await CreateWebWorkerMLCEngine(worker, MODEL_ID, {
     initProgressCallback: (report) => {
       loadProgress = {
         loaded: report.loaded,
@@ -59,5 +64,9 @@ export async function unloadModel() {
     } catch {
     }
     engine = null;
+  }
+  if (worker) {
+    worker.terminate();
+    worker = null;
   }
 }
