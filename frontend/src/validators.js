@@ -114,63 +114,90 @@ function extractJsonObject(text) {
 }
 
 function parseUpgradeOptions(raw, ctx) {
+  if (raw == null) return [];
   if (!Array.isArray(raw)) {
     if (typeof raw === "object" && raw !== null && raw.nome) {
       raw = [raw];
     } else {
-      throw new Error(`${ctx}: opzioni must be a list`);
+      console.warn(`${ctx}: opzioni must be a list, got`, typeof raw);
+      return [];
     }
   }
 
-  return raw.map((item, i) => {
-    if (typeof item !== "object" || item === null) {
-      throw new Error(`${ctx}.opzioni[${i}] must be an object`);
-    }
-    const nome = String(item.nome || "").trim();
-    if (!nome) throw new Error(`${ctx}.opzioni[${i}].nome is required`);
-    const fascia = normalizeFascia(item.fascia);
-    const motivazione = String(item.motivazione || "").trim();
-    const compatibilita = String(item.compatibilita || "").trim();
-    if (!motivazione) throw new Error(`${ctx}.opzioni[${i}].motivazione is required`);
-    if (!compatibilita) throw new Error(`${ctx}.opzioni[${i}].compatibilita is required`);
-    return { nome, fascia, motivazione, compatibilita };
-  });
+  return raw
+    .filter((item) => item != null)
+    .map((item) => {
+      if (typeof item !== "object" || item === null) return null;
+      const nome = String(item.nome || "").trim();
+      if (!nome) return null;
+      try {
+        const fascia = normalizeFascia(item.fascia);
+        const motivazione = String(item.motivazione || "").trim();
+        const compatibilita = String(item.compatibilita || "").trim();
+        return { nome, fascia, motivazione, compatibilita };
+      } catch {
+        return null;
+      }
+    })
+    .filter(Boolean);
 }
 
 function parseUpgradeCategories(raw) {
-  if (!Array.isArray(raw)) throw new Error("upgrade_consigliati must be a list");
+  if (raw == null) return [];
+  if (!Array.isArray(raw)) {
+    console.warn("upgrade_consigliati must be a list, got", typeof raw);
+    return [];
+  }
 
-  return raw.map((item, i) => {
-    if (typeof item !== "object" || item === null) {
-      throw new Error(`upgrade_consigliati[${i}] must be an object`);
-    }
-    const componente = String(item.componente || "").trim();
-    if (!componente) throw new Error(`upgrade_consigliati[${i}].componente is required`);
-    const ctx = `upgrade_consigliati[${i}]`;
-    const opzioni = parseUpgradeOptions(item.opzioni, ctx);
-    if (opzioni.length === 0) throw new Error(`${ctx}: at least one opzione is required`);
-    return {
-      componente,
-      opzioni: opzioni.slice(0, 3),
-    };
-  });
+  return raw
+    .filter((item) => item != null)
+    .map((item) => {
+      if (typeof item !== "object" || item === null) return null;
+      const componente = String(item.componente || "").trim();
+      if (!componente) return null;
+      const ctx = `upgrade_consigliati[${componente}]`;
+      const opzioni = parseUpgradeOptions(item.opzioni, ctx);
+      if (opzioni.length === 0) return null;
+      return {
+        componente,
+        opzioni: opzioni.slice(0, 3),
+      };
+    })
+    .filter(Boolean);
 }
 
 function parseDependent(raw) {
   if (raw == null) return [];
-  if (!Array.isArray(raw)) throw new Error("upgrade_dipendenti must be a list");
 
-  return raw.map((item, i) => {
-    if (typeof item !== "object" || item === null) {
-      throw new Error(`upgrade_dipendenti[${i}] must be an object`);
-    }
-    const componente = String(item.componente || "").trim();
-    const motivo = String(item.motivo || "").trim();
-    if (!componente || !motivo) {
-      throw new Error(`upgrade_dipendenti[${i}] requires componente and motivo strings`);
-    }
-    return { componente, motivo };
-  });
+  if (typeof raw === "string") {
+    raw = raw.trim() ? [raw] : [];
+  } else if (typeof raw === "object" && !Array.isArray(raw) && raw !== null) {
+    raw = [raw];
+  }
+
+  if (!Array.isArray(raw)) {
+    console.warn("upgrade_dipendenti must be a list, got", typeof raw);
+    return [];
+  }
+
+  return raw
+    .filter((item) => item != null)
+    .map((item) => {
+      if (typeof item === "string") {
+        const trimmed = item.trim();
+        if (!trimmed) return null;
+        return { componente: trimmed, motivo: "Necessario per supportare l'upgrade principale" };
+      }
+      if (typeof item !== "object" || item === null) return null;
+      const componente = String(item.componente || "").trim();
+      const motivo = String(item.motivo || "").trim();
+      if (!componente && !motivo) return null;
+      return {
+        componente: componente || "Componente sconosciuto",
+        motivo: motivo || "Necessario per supportare l'upgrade principale",
+      };
+    })
+    .filter(Boolean);
 }
 
 const OBVIOUSLY_NOT_HARDWARE = [
