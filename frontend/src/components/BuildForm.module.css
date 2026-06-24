@@ -2,6 +2,65 @@
   padding: 0 clamp(1rem, 4vw, 2rem) clamp(1.5rem, 4vw, 2.5rem);
 }
 
+.quickCard {
+  max-width: 1100px;
+  margin: 0 auto 1rem;
+  padding: 1.25rem 1.5rem;
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.1) 0%, rgba(0, 212, 255, 0.06) 100%);
+  border: 1px solid rgba(124, 58, 237, 0.25);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.quickText {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-muted);
+  line-height: 1.4;
+}
+
+.quickBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform var(--transition), box-shadow var(--transition), filter var(--transition);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.4), 0 0 28px rgba(124, 58, 237, 0.35);
+}
+
+.quickBtn:hover:not(:disabled) {
+  filter: brightness(1.1);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.7), 0 0 40px rgba(124, 58, 237, 0.45);
+  transform: translateY(-1px);
+}
+
+.quickBtn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.quickBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.quickBtnIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 .card {
   max-width: 1100px;
   margin: 0 auto;

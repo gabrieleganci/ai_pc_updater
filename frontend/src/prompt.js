@@ -40,7 +40,7 @@ Segui rigorosamente questa sequenza:
    - GPU: lunghezza case, TDP, requisiti alimentazione
    - Storage: interfaccia (NVMe/SATA), slot disponibili
 
-3. **Identificazione bottleneck** — Individua il componente che limita le prestazioni nel caso d'uso specifico. Considera CPU bound vs GPU bound, bandwidth RAM, velocità storage. Sii impietosa: se un componente è molto vecchio rispetto agli altri, dillo chiaramente.
+3. **Identificazione bottleneck** — Analizza SOLO i bottleneck. Ogni item deve identificare UN singolo collo di bottiglia specifico (es. "CPU limita la GPU a 60fps in 1440p", "16GB DDR4-3200 è appena sufficiente per il montaggio video 4K"). Non ripetere la valutazione generale della build già scritta in analisi_build_attuale. Sii tecnico, diretto, e concentrati solo sul perché e come quel componente è un bottleneck.
 
 4. **Raccomandazioni contestualizzate** — 2-3 opzioni per fascia budget/medio/alto, giustificando ogni scelta.
 
@@ -61,7 +61,7 @@ Segui rigorosamente questa sequenza:
 {
   "analisi_build_attuale": "Valutazione sintetica ma tecnica della configurazione attuale (2-3 frasi)",
   "bottleneck_identificati": [
-    "Descrizione del bottleneck con componente coinvolto e impatto sul caso d'uso"
+    "Singolo bottleneck specifico: componente + perché limita + impatto sul caso d'uso. NON ripetere l'analisi generale."
   ],
   "upgrade_consigliati": [
     {

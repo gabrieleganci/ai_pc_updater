@@ -21,11 +21,25 @@ export default function App() {
   const [pendingPayload, setPendingPayload] = useState(null);
   const abortRef = useRef(null);
 
-  function startModelLoad() {
+  async function startModelLoad() {
     setModelError(null);
     setModelProgress(null);
     if (!navigator.gpu) {
       setModelError("WebGPU non è supportato da questo browser. Usa Chrome 113+, Edge 113+ o Opera 99+.");
+      return;
+    }
+    if (!window.crossOriginIsolated) {
+      setModelError("Cross-Origin Isolation non attiva. Avvia con `npm run dev` (il server imposta gli header necessari) oppure servi i file statici con HTTPS e gli header COOP/COEP corretti.");
+      return;
+    }
+    try {
+      const adapter = await navigator.gpu.requestAdapter();
+      if (!adapter) {
+        setModelError("GPU non disponibile — il browser supporta WebGPU ma non è stata trovata una GPU compatibile. Aggiorna i driver GPU e riprova.");
+        return;
+      }
+    } catch (e) {
+      setModelError("Errore WebGPU: " + e.message);
       return;
     }
     loadModel((report) => {

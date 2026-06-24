@@ -9,6 +9,7 @@ import {
   Zap,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { detectSystem } from "../detectSystem.js";
 import styles from "./BuildForm.module.css";
 
 const UPGRADE_OPTIONS = ["CPU", "GPU", "RAM", "Motherboard", "PSU", "Storage"];
@@ -42,6 +43,7 @@ const initialForm = () => ({
 export default function BuildForm({ onSubmit, disabled }) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState({});
+  const [detecting, setDetecting] = useState(false);
 
   const fieldMap = useMemo(() => {
     const m = {};
@@ -104,8 +106,56 @@ export default function BuildForm({ onSubmit, disabled }) {
     onSubmit(payload);
   }
 
+  async function handleDetect() {
+    if (disabled || detecting) return;
+    setDetecting(true);
+    try {
+      const detected = await detectSystem();
+      const merged = {
+        ...initialForm(),
+        cpu: detected.cpu || "",
+        gpu: detected.gpu || "",
+        ram: detected.ram || "",
+        motherboard: detected.motherboard || "",
+        psu: detected.psu || "",
+        storage: detected.storage || "",
+        case: detected.case || "",
+      };
+      setForm(merged);
+      const payload = {
+        current_build: {
+          cpu: merged.cpu || "Unknown CPU",
+          gpu: merged.gpu || "Unknown GPU",
+          ram: merged.ram || "Unknown RAM",
+          motherboard: merged.motherboard || "Auto-detected motherboard",
+          psu: merged.psu || "Auto-detected PSU",
+        },
+        upgrade_target: "GPU",
+      };
+      if (merged.storage) payload.current_build.storage = merged.storage;
+      if (merged.case) payload.current_build.case = merged.case;
+      onSubmit(payload);
+    } finally {
+      setDetecting(false);
+    }
+  }
+
   return (
     <section className={styles.section} aria-labelledby="build-form-title">
+      <div className={styles.quickCard}>
+        <p className={styles.quickText}>
+          Auto-detect your PC hardware and get an instant upgrade analysis:
+        </p>
+        <button
+          type="button"
+          className={styles.quickBtn}
+          onClick={handleDetect}
+          disabled={disabled || detecting}
+        >
+          <MonitorPlay className={styles.quickBtnIcon} strokeWidth={1.75} aria-hidden />
+          {detecting ? "Detecting hardware..." : "Analyze Build"}
+        </button>
+      </div>
       <div className={styles.card}>
         <h2 id="build-form-title" className={styles.cardTitle}>
           Your Current Build
