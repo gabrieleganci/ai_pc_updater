@@ -70,3 +70,17 @@ export async function unloadModel() {
     worker = null;
   }
 }
+
+export async function clearModelCache() {
+  const names = ["webllm", "webllm_config", "webllm_cache"];
+  for (const name of names) {
+    try {
+      indexedDB.deleteDatabase(name);
+    } catch {
+    }
+  }
+}
+
+export function isModelCached() {
+  return localStorage.getItem("pc_model_cached") === "true";
+}

@@ -258,6 +258,31 @@
   line-height: 1.4;
 }
 
+.startBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 2rem;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, #7c3aed, #a78bfa);
+  color: #fff;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s, filter 0.2s;
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.4), 0 0 32px rgba(124, 58, 237, 0.35);
+  margin-top: 1.5rem;
+}
+.startBtn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 0 1px rgba(124, 58, 237, 0.7), 0 0 44px rgba(124, 58, 237, 0.5);
+  transform: translateY(-1px);
+}
+.startBtn:active {
+  transform: translateY(0);
+}
+
 .retryBtn {
   display: inline-flex;
   align-items: center;

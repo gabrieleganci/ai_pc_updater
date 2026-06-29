@@ -23,7 +23,7 @@ function formatBytes(bytes) {
   return `${Math.round(mb)} MB`;
 }
 
-export default function ModelLoadingScreen({ progress, error, onRetry }) {
+export default function ModelLoadingScreen({ progress, error, onRetry, welcome, onStart, modelCached }) {
   const [tipIndex, setTipIndex] = useState(0);
   const [tipFade, setTipFade] = useState(true);
   const [particles] = useState(() =>
@@ -38,6 +38,7 @@ export default function ModelLoadingScreen({ progress, error, onRetry }) {
   );
 
   useEffect(() => {
+    if (welcome) return;
     const id = setInterval(() => {
       setTipFade(false);
       setTimeout(() => {
@@ -46,7 +47,46 @@ export default function ModelLoadingScreen({ progress, error, onRetry }) {
       }, 300);
     }, 5000);
     return () => clearInterval(id);
-  }, []);
+  }, [welcome]);
+
+  if (welcome) {
+    return (
+      <div className={styles.overlay}>
+        <div className={styles.gridBg} />
+        {particles.map((p) => (
+          <div
+            key={p.id}
+            className={styles.particle}
+            style={{
+              left: `${p.x}%`,
+              top: `${p.y}%`,
+              width: p.size,
+              height: p.size,
+              animationDelay: `${p.delay}s`,
+              animationDuration: `${4 / p.speed}s`,
+            }}
+          />
+        ))}
+        <div className={styles.card}>
+          <div className={styles.iconWrap}>
+            <div className={styles.pulseRing} />
+            <div className={styles.pulseRingOuter} />
+            <Download className={styles.icon} strokeWidth={1.5} />
+          </div>
+          <h1 className={styles.title}>PC Build Advisor</h1>
+          <p className={styles.subtitle}>
+            Analisi AI delle configurazioni PC
+          </p>
+          <button className={styles.startBtn} onClick={onStart}>
+            {modelCached ? "Avvia sito" : "Scarica modello"}
+          </button>
+          <p className={styles.disclaimer} style={{ marginTop: '1.25rem' }}>
+            Download una tantum ~2 GB. Le analisi successive saranno immediate.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (

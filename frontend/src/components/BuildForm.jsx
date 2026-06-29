@@ -122,18 +122,19 @@ export default function BuildForm({ onSubmit, disabled }) {
         case: detected.case || "",
       };
       setForm(merged);
+      const fallback = (val, label) => (val && val.trim() ? val.trim() : `${label} non rilevato`);
       const payload = {
         current_build: {
-          cpu: merged.cpu || "Unknown CPU",
-          gpu: merged.gpu || "Unknown GPU",
-          ram: merged.ram || "Unknown RAM",
-          motherboard: merged.motherboard || "Auto-detected motherboard",
-          psu: merged.psu || "Auto-detected PSU",
+          cpu: fallback(merged.cpu, "CPU"),
+          gpu: fallback(merged.gpu, "GPU"),
+          ram: fallback(merged.ram, "RAM"),
+          motherboard: fallback(merged.motherboard, "Motherboard"),
+          psu: fallback(merged.psu, "PSU"),
+          storage: fallback(merged.storage, "Storage"),
+          case: fallback(merged.case, "Case"),
         },
         upgrade_target: "GPU",
       };
-      if (merged.storage) payload.current_build.storage = merged.storage;
-      if (merged.case) payload.current_build.case = merged.case;
       onSubmit(payload);
     } finally {
       setDetecting(false);

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { analyzeBuild } from "./api.js";
-import { loadModel, isModelLoaded } from "./llm.js";
+import { loadModel, unloadModel, clearModelCache, isModelCached } from "./llm.js";
 import BuildForm from "./components/BuildForm.jsx";
 import DisclaimerBanner from "./components/DisclaimerBanner.jsx";
 import { ErrorBoundary } from "./components/ErrorBoundary.jsx";
@@ -19,9 +19,12 @@ export default function App() {
   const [modelProgress, setModelProgress] = useState(null);
   const [modelError, setModelError] = useState(null);
   const [pendingPayload, setPendingPayload] = useState(null);
+  const [showWelcome, setShowWelcome] = useState(true);
+  const [modelCached, setModelCached] = useState(isModelCached);
   const abortRef = useRef(null);
 
   async function startModelLoad() {
+    setShowWelcome(false);
     setModelError(null);
     setModelProgress(null);
     if (!navigator.gpu) {
@@ -48,6 +51,7 @@ export default function App() {
       .then(() => {
         setModelReady(true);
         setModelProgress(null);
+        localStorage.setItem("pc_model_cached", "true");
       })
       .catch((err) => {
         setModelError(err.message);
@@ -55,9 +59,18 @@ export default function App() {
       });
   }
 
-  useEffect(() => {
-    startModelLoad();
-  }, []);
+  async function handleUnloadModel() {
+    unloadModel();
+    await clearModelCache();
+    localStorage.removeItem("pc_model_cached");
+    setModelReady(false);
+    setModelProgress(null);
+    setModelError(null);
+    setShowWelcome(true);
+    setResult(null);
+    setBuildSnapshot(null);
+    setApiError("");
+  }
 
   useEffect(() => {
     if (modelReady && pendingPayload) {
@@ -96,7 +109,7 @@ export default function App() {
       const msg =
         e?.payload?.error ||
         e?.message ||
-        "Analisi non completata. Il modello potrebbe essere lento su questa GPU. Riprova.";
+        "Errore durante l'analisi. Tieni aperta la scheda e riprova.";
       setApiError(msg);
     } finally {
       if (abortRef.current === ac) abortRef.current = null;
@@ -111,6 +124,10 @@ export default function App() {
     }
     runAnalysis(payload);
   }, [modelReady, runAnalysis]);
+
+  if (showWelcome) {
+    return <ModelLoadingScreen welcome modelCached={modelCached} onStart={startModelLoad} />;
+  }
 
   if (!modelReady) {
     return (
@@ -148,6 +165,16 @@ export default function App() {
             </footer>
           ) : null}
         </main>
+
+        <div className={styles.footerActions}>
+          <button
+            type="button"
+            className={styles.deleteBtn}
+            onClick={handleUnloadModel}
+          >
+            Elimina modello
+          </button>
+        </div>
       </div>
     </ErrorBoundary>
   );

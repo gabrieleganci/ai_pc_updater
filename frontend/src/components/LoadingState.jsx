@@ -1,47 +1,37 @@
-import { Loader2 } from "lucide-react";
-import { useEffect, useState } from "react";
 import styles from "./LoadingState.module.css";
 
-const MAX_SECONDS = 120;
+const BUBBLES = Array.from({ length: 24 }, (_, i) => ({
+  id: i,
+  size: 12 + Math.random() * 28,
+  left: Math.random() * 100,
+  delay: Math.random() * 4,
+  duration: 3 + Math.random() * 4,
+  opacity: 0.15 + Math.random() * 0.35,
+}));
 
 export default function LoadingState() {
-  const [progress, setProgress] = useState(0);
-
-  useEffect(() => {
-    const start = Date.now();
-    const id = setInterval(() => {
-      const elapsed = (Date.now() - start) / 1000;
-      const target = Math.min(92, (elapsed / MAX_SECONDS) * 100);
-      setProgress((p) => (target > p ? target : p));
-    }, 400);
-    return () => clearInterval(id);
-  }, []);
-
   return (
     <section className={styles.section} aria-busy="true" aria-live="polite">
-      <div className={styles.card}>
-        <div className={styles.skeletonTop}>
-          <div className={styles.skLine} />
-          <div className={styles.skLineShort} />
-        </div>
-        <div className={styles.pulseWrap}>
-          <div className={styles.pulseRing} />
-          <Loader2 className={styles.spinner} strokeWidth={2} aria-hidden />
-        </div>
-        <p className={styles.message}>Gemma 4 sta analizzando la tua configurazione...</p>
-        <div className={styles.barOuter}>
-          <div
-            className={styles.barInner}
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className={styles.hint}>
-          Può richiedere fino a {MAX_SECONDS} secondi. Tieni aperta questa scheda.
-        </p>
-        <div className={styles.skeletonGrid}>
-          {[1, 2, 3].map((i) => (
-            <div key={i} className={styles.skBlock} />
+      <div className={styles.container}>
+        <div className={styles.bubbleField}>
+          {BUBBLES.map((b) => (
+            <div
+              key={b.id}
+              className={styles.bubble}
+              style={{
+                width: b.size,
+                height: b.size,
+                left: `${b.left}%`,
+                animationDelay: `${b.delay}s`,
+                animationDuration: `${b.duration}s`,
+                opacity: b.opacity,
+              }}
+            />
           ))}
+        </div>
+        <div className={styles.textWrap}>
+          <p className={styles.label}>Analisi in corso</p>
+          <p className={styles.sub}>Gemma sta elaborando la tua build</p>
         </div>
       </div>
     </section>
