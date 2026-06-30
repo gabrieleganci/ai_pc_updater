@@ -44,7 +44,7 @@ export async function generateAnalysis(prompt, signal) {
         { role: "user", content: prompt },
       ],
       temperature: 0.1,
-      max_tokens: 1536,
+      max_tokens: 1024,
     },
     signal
   );

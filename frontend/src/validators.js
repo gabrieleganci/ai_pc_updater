@@ -86,22 +86,32 @@ function coerceStrList(value, field) {
   throw new Error(`${field} must be a list of strings or a string`);
 }
 
+function sanitizeJson(text) {
+  return text
+    .replace(/,\s*([\]}])/g, "$1")
+    .replace(/([\[{])\s*,/g, "$1")
+    .replace(/\/\/.*?(\n|$)/g, "")
+    .replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
 function extractJsonObject(text) {
   text = text.trim();
   if (!text) throw new Error("Empty model response");
 
+  let cleaned = sanitizeJson(text);
+
   try {
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(cleaned);
     if (typeof parsed === "object" && !Array.isArray(parsed)) return parsed;
   } catch {
   }
 
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
+  const start = cleaned.indexOf("{");
+  const end = cleaned.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
     throw new Error("No JSON object found in model response");
   }
-  const snippet = text.slice(start, end + 1);
+  const snippet = cleaned.slice(start, end + 1);
   try {
     const parsed = JSON.parse(snippet);
     if (typeof parsed !== "object" || Array.isArray(parsed)) {
@@ -109,7 +119,11 @@ function extractJsonObject(text) {
     }
     return parsed;
   } catch (e) {
-    throw new Error(`Invalid JSON: ${e.message}`);
+    const doubleTry = JSON.parse(sanitizeJson(snippet));
+    if (typeof doubleTry !== "object" || Array.isArray(doubleTry)) {
+      throw new Error("Parsed JSON is not an object");
+    }
+    return doubleTry;
   }
 }
 
