@@ -38,17 +38,7 @@ export default function App() {
       return;
     }
     if (!window.crossOriginIsolated) {
-      setModelError("Cross-Origin Isolation non attiva. Avvia con `npm run dev` (il server imposta gli header necessari) oppure servi i file statici con HTTPS e gli header COOP/COEP corretti.");
-      return;
-    }
-    try {
-      const adapter = await navigator.gpu.requestAdapter();
-      if (!adapter) {
-        setModelError("GPU non disponibile — il browser supporta WebGPU ma non è stata trovata una GPU compatibile. Aggiorna i driver GPU e riprova.");
-        return;
-      }
-    } catch (e) {
-      setModelError("Errore WebGPU: " + e.message);
+      setModelError("Cross-Origin Isolation non attiva. Avvia con `npm run dev` dalla cartella frontend/ oppure consulta il README per il deploy.");
       return;
     }
     loadModel((report) => {
@@ -60,7 +50,13 @@ export default function App() {
         isModelCached().then(setModelCached);
       })
       .catch((err) => {
-        setModelError(err.message);
+        console.error("WebLLM error:", err);
+        let msg = err?.message || "Errore sconosciuto durante il caricamento.";
+        const ua = navigator.userAgent.toLowerCase();
+        const isFlatpak = ua.includes("flatpak") || ua.includes("snap");
+        if (isFlatpak) msg += " [Rilevato Flatpak/Snap — installa Chrome dal sito ufficiale https://www.google.com/chrome/]";
+        else if (ua.includes("linux")) msg += " [Su Linux WebGPU richiede Vulkan. Apri terminale: vulkaninfo --summary. Se fallisce: sudo pacman -S vulkan-icd-loader (Arch) o sudo apt install mesa-vulkan-drivers vulkan-tools (Debian/Ubuntu)]";
+        setModelError(msg);
         setModelProgress(null);
       });
   }

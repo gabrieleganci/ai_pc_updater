@@ -3,13 +3,15 @@ export async function detectSystem() {
 
   try {
     if (navigator.gpu) {
-      const adapter = await navigator.gpu.requestAdapter();
-      if (adapter) {
-        const info = adapter.info;
-        if (info) {
-          d.gpu = info.description || [info.vendor, info.architecture, info.device].filter(Boolean).join(" ");
+      try {
+        const adapter = await navigator.gpu.requestAdapter();
+        if (adapter) {
+          const info = adapter.info;
+          if (info) {
+            d.gpu = info.description || [info.vendor, info.architecture, info.device].filter(Boolean).join(" ");
+          }
         }
-      }
+      } catch (_) {}
     }
   } catch {}
 

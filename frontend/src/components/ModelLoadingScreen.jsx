@@ -14,6 +14,14 @@ const TIPS = [
   "Progettato per appassionati di PC gaming e tecnici IT",
 ];
 
+const STATUS_STEPS = [
+  "Avvio WebGPU...",
+  "Inizializzazione backend AI...",
+  "Connessione al runtime GPU...",
+  "Caricamento modello in corso...",
+  "Quasi pronto...",
+];
+
 const ICONS = [Cpu, Zap, Download, CpuIcon, Loader2];
 
 function formatBytes(bytes) {
@@ -26,6 +34,7 @@ function formatBytes(bytes) {
 export default function ModelLoadingScreen({ progress, error, onRetry, welcome, onStart, modelCached }) {
   const [tipIndex, setTipIndex] = useState(0);
   const [tipFade, setTipFade] = useState(true);
+  const [statusIdx, setStatusIdx] = useState(0);
   const [particles] = useState(() =>
     Array.from({ length: 8 }, (_, i) => ({
       id: i,
@@ -48,6 +57,12 @@ export default function ModelLoadingScreen({ progress, error, onRetry, welcome, 
     }, 5000);
     return () => clearInterval(id);
   }, [welcome]);
+
+  useEffect(() => {
+    if (welcome || error || (progress && progress.total > 0)) return;
+    const id = setInterval(() => setStatusIdx(i => (i + 1) % STATUS_STEPS.length), 4000);
+    return () => clearInterval(id);
+  }, [welcome, error, progress]);
 
   if (welcome) {
     return (
@@ -113,7 +128,7 @@ export default function ModelLoadingScreen({ progress, error, onRetry, welcome, 
           <h1 className={styles.title}>Download fallito</h1>
           <p className={styles.errorText}>{error}</p>
           <p className={styles.hint}>
-            Verifica la connessione a Internet e che il browser supporti WebGPU (Chrome 113+).
+            PC Build Advisor richiede WebGPU e ~2 GB di spazio libero. Se l'errore riguarda la GPU, apri la scheda chrome://gpu per verificare lo stato WebGPU.
           </p>
           {onRetry ? (
             <button className={styles.retryBtn} onClick={onRetry}>
@@ -129,7 +144,7 @@ export default function ModelLoadingScreen({ progress, error, onRetry, welcome, 
     ? Math.min(100, Math.round((progress.loaded / progress.total) * 100))
     : 0;
 
-  const label = progress?.text || "Avvio WebGPU...";
+  const label = progress?.text || STATUS_STEPS[statusIdx];
   const isDownloading = progress && progress.total > 0;
   const loadedMb = progress ? formatBytes(progress.loaded) : "0 MB";
   const totalMb = progress ? formatBytes(progress.total) : "0 MB";
