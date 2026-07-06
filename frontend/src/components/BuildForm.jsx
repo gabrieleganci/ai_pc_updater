@@ -112,30 +112,16 @@ export default function BuildForm({ onSubmit, disabled }) {
     try {
       const detected = await detectSystem();
       const merged = {
-        ...initialForm(),
-        cpu: detected.cpu || "",
-        gpu: detected.gpu || "",
-        ram: detected.ram || "",
-        motherboard: detected.motherboard || "",
-        psu: detected.psu || "",
-        storage: detected.storage || "",
-        case: detected.case || "",
+        ...form,
+        cpu: detected.cpu || form.cpu,
+        gpu: detected.gpu || form.gpu,
+        ram: detected.ram || form.ram,
+        motherboard: detected.motherboard || form.motherboard,
+        psu: detected.psu || form.psu,
+        storage: detected.storage || form.storage,
+        case: detected.case || form.case,
       };
       setForm(merged);
-      const fallback = (val, label) => (val && val.trim() ? val.trim() : `${label} non rilevato`);
-      const payload = {
-        current_build: {
-          cpu: fallback(merged.cpu, "CPU"),
-          gpu: fallback(merged.gpu, "GPU"),
-          ram: fallback(merged.ram, "RAM"),
-          motherboard: fallback(merged.motherboard, "Motherboard"),
-          psu: fallback(merged.psu, "PSU"),
-          storage: fallback(merged.storage, "Storage"),
-          case: fallback(merged.case, "Case"),
-        },
-        upgrade_target: "GPU",
-      };
-      onSubmit(payload);
     } finally {
       setDetecting(false);
     }
@@ -145,7 +131,7 @@ export default function BuildForm({ onSubmit, disabled }) {
     <section className={styles.section} aria-labelledby="build-form-title">
       <div className={styles.quickCard}>
         <p className={styles.quickText}>
-          Auto-detect your PC hardware and get an instant upgrade analysis:
+          Rileva CPU/GPU/RAM automaticamente (motherboard, PSU, storage e case non sono rilevabili via browser e vanno inseriti manualmente):
         </p>
         <button
           type="button"
@@ -154,7 +140,7 @@ export default function BuildForm({ onSubmit, disabled }) {
           disabled={disabled || detecting}
         >
           <MonitorPlay className={styles.quickBtnIcon} strokeWidth={1.75} aria-hidden />
-          {detecting ? "Detecting hardware..." : "Analyze Build"}
+          {detecting ? "Rilevamento in corso..." : "Auto-detect hardware"}
         </button>
       </div>
       <div className={styles.card}>

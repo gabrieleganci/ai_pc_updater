@@ -14,7 +14,9 @@ Inserisci le specifiche del tuo PC, seleziona il componente da aggiornare, e un 
 - **Upgrade dipendenti** — componenti da cambiare per supportare l'upgrade
 - **Avvertenze** — rischi e informazioni mancanti
 
-Nessun dato lascia il tuo computer. Zero server. Zero API key.
+Nessun dato della tua configurazione lascia il tuo computer. Zero server backend. Zero API key.
+Il modello AI viene scaricato una tantum da Hugging Face CDN; i font sono caricati da Google Fonts.
+Dopo il primo download, l'app funziona offline.
 
 ---
 
@@ -41,13 +43,24 @@ Apri **`http://localhost:5173/`** nel browser.
 
 Al primo avvio vedrai una schermata **"Preparazione PC Build Advisor"** con una barra di progresso — il modello AI (~2 GB) viene scaricato da Hugging Face e cachato nel browser. Le successive aperture saranno immediate.
 
-### Build produzione (static hosting)
+### Test build produzione in locale
 
 ```bash
 npm run build
+npm run preview
 ```
 
-Il contenuto della cartella `dist/` è un sito statico pronto per essere deployato su **GitHub Pages**, **Vercel**, **Netlify**, **Cloudflare Pages** o qualsiasi web server.
+Apri **`http://localhost:4173/`** nel browser. `vite preview` include gli header COOP/COEP necessari.
+
+### Deploy produzione
+
+Il contenuto della cartella `dist/` può essere deployato su **Vercel**, **Netlify**, **Cloudflare Pages** o qualsiasi web server che supporti header HTTP personalizzati.
+
+> **⚠️ GitHub Pages non è supportato** perché non permette di impostare header HTTP personalizzati. L'app richiede gli header `Cross-Origin-Opener-Policy: same-origin` e `Cross-Origin-Embedder-Policy: require-corp` per funzionare.
+
+I file di configurazione per gli header sono già inclusi nel progetto:
+- **Netlify / Cloudflare Pages**: il file `_headers` nella cartella `dist/` viene riconosciuto automaticamente
+- **Vercel**: il file `vercel.json` nella root del progetto configura gli header automaticamente
 
 ---
 
@@ -57,17 +70,21 @@ Il contenuto della cartella `dist/` è un sito statico pronto per essere deploya
 
 ```
 frontend/
-├── index.html              # Entry point + WebGPU detection
-├── vite.config.js          # Vite config
+├── index.html              # Entry point + WebGPU/COOP detection
+├── vite.config.js          # Vite config (COOP/COEP in dev + preview)
+├── vercel.json             # Header COOP/COEP per Vercel
+├── public/_headers         # Header COOP/COEP per Netlify/Cloudflare Pages
 ├── package.json
 └── src/
     ├── main.jsx            # React mount
     ├── App.jsx             # Root component con model loading state
     ├── App.module.css      # Stili root
     ├── api.js              # Orchestrazione: prompt → modello → validatore
+    ├── detectSystem.js     # Rilevamento hardware browser (CPU/GPU/RAM)
     ├── llm.js              # WebLLM engine (caricamento + inferenza WebGPU)
     ├── prompt.js           # Prompt di sistema professionale (italiano)
     ├── validators.js       # Validatore JSON output AI
+    ├── worker.js           # Web Worker MLCEngine
     ├── styles/global.css   # Design tokens (dark theme)
     └── components/
         ├── BuildForm.jsx           # Form input configurazione
@@ -87,9 +104,9 @@ frontend/
 
 | Comando | Cosa fa |
 |---------|---------|
-| `npm run dev` | Avvia server di sviluppo su `localhost:5173` |
+| `npm run dev` | Avvia server di sviluppo su `localhost:5173` (con COOP/COEP) |
 | `npm run build` | Build di produzione in `dist/` |
-| `npm run preview` | Server locale per testare la build |
+| `npm run preview` | Server locale per testare la build (con COOP/COEP) |
 
 ### Flusso dati
 

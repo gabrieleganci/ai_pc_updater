@@ -13,6 +13,8 @@ import styles from "./App.module.css";
 export default function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
+  const [correzioni, setCorrezioni] = useState(null);
+  const [suggerimenti, setSuggerimenti] = useState(null);
   const [buildSnapshot, setBuildSnapshot] = useState(null);
   const [apiError, setApiError] = useState("");
   const [modelReady, setModelReady] = useState(false);
@@ -20,8 +22,12 @@ export default function App() {
   const [modelError, setModelError] = useState(null);
   const [pendingPayload, setPendingPayload] = useState(null);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [modelCached, setModelCached] = useState(isModelCached);
+  const [modelCached, setModelCached] = useState(false);
   const abortRef = useRef(null);
+
+  useEffect(() => {
+    isModelCached().then(setModelCached);
+  }, []);
 
   async function startModelLoad() {
     setShowWelcome(false);
@@ -51,7 +57,7 @@ export default function App() {
       .then(() => {
         setModelReady(true);
         setModelProgress(null);
-        localStorage.setItem("pc_model_cached", "true");
+        isModelCached().then(setModelCached);
       })
       .catch((err) => {
         setModelError(err.message);
@@ -62,14 +68,16 @@ export default function App() {
   async function handleUnloadModel() {
     unloadModel();
     await clearModelCache();
-    localStorage.removeItem("pc_model_cached");
     setModelReady(false);
     setModelProgress(null);
     setModelError(null);
     setShowWelcome(true);
     setResult(null);
+    setCorrezioni(null);
+    setSuggerimenti(null);
     setBuildSnapshot(null);
     setApiError("");
+    setModelCached(false);
   }
 
   useEffect(() => {
@@ -87,6 +95,7 @@ export default function App() {
 
     setApiError("");
     setResult(null);
+    setCorrezioni(null);
     setBuildSnapshot({
       cpu: payload.current_build.cpu,
       gpu: payload.current_build.gpu,
@@ -101,6 +110,8 @@ export default function App() {
       const json = await analyzeBuild(payload, ac.signal);
       if (json.success && json.data) {
         setResult(json.data);
+        setCorrezioni(json.correzioni || null);
+        setSuggerimenti(json.suggerimenti?.length > 0 ? json.suggerimenti : null);
       } else {
         setApiError(json.error || "Analisi fallita.");
       }
@@ -156,7 +167,7 @@ export default function App() {
           {loading ? <LoadingState /> : null}
 
           {result && buildSnapshot ? (
-            <ResultsReport data={result} buildSnapshot={buildSnapshot} />
+            <ResultsReport data={result} buildSnapshot={buildSnapshot} correzioni={correzioni} suggerimenti={suggerimenti} />
           ) : null}
 
           {!loading && !result ? (

@@ -1,7 +1,9 @@
 import BottleneckCard from "./BottleneckCard.jsx";
+import CorrectionsCard from "./CorrectionsCard.jsx";
 import DependentUpgradesCard from "./DependentUpgradesCard.jsx";
 import DisclaimerBanner from "./DisclaimerBanner.jsx";
 import RecommendationsCard from "./RecommendationsCard.jsx";
+import SuggestionsCard from "./SuggestionsCard.jsx";
 import WarningsCard from "./WarningsCard.jsx";
 import styles from "./ResultsReport.module.css";
 
@@ -17,7 +19,7 @@ import styles from "./ResultsReport.module.css";
  *   buildSnapshot: Record<string, string | undefined>;
  * }} props
  */
-export default function ResultsReport({ data, buildSnapshot }) {
+export default function ResultsReport({ data, buildSnapshot, correzioni, suggerimenti }) {
   const chips = [
     ["CPU", buildSnapshot.cpu],
     ["GPU", buildSnapshot.gpu],
@@ -50,9 +52,13 @@ export default function ResultsReport({ data, buildSnapshot }) {
         <DependentUpgradesCard items={data.upgrade_dipendenti} />
       </div>
 
+      <CorrectionsCard items={correzioni} />
+
       <RecommendationsCard categories={data.upgrade_consigliati} />
 
       <WarningsCard items={data.avvertenze} />
+
+      <SuggestionsCard items={suggerimenti} />
 
       <DisclaimerBanner />
     </section>
