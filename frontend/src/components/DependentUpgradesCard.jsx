@@ -8,7 +8,10 @@ export default function DependentUpgradesCard({ items }) {
   if (!items || items.length === 0) {
     return (
       <article className={styles.card}>
-        <h3 className={styles.title}>Dependent Upgrades</h3>
+      <h3 className={styles.title}>
+        <Link2 className={styles.titleIcon} strokeWidth={2} aria-hidden />
+        Dependent Upgrades
+      </h3>
         <p className={styles.empty}>No additional dependent upgrades flagged.</p>
       </article>
     );

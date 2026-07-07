@@ -13,15 +13,16 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(124, 58, 237, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(124, 58, 237, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(124, 58, 237, 0.12) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(124, 58, 237, 0.12) 1px, transparent 1px);
   background-size: 48px 48px;
+  background-position: 0 0;
   animation: gridShift 8s linear infinite;
 }
 
 @keyframes gridShift {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(48px, 48px); }
+  0% { background-position: 0 0; }
+  100% { background-position: 48px 48px; }
 }
 
 .particle {

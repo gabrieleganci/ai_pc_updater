@@ -13,7 +13,6 @@ import styles from "./App.module.css";
 export default function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [correzioni, setCorrezioni] = useState(null);
   const [suggerimenti, setSuggerimenti] = useState(null);
   const [buildSnapshot, setBuildSnapshot] = useState(null);
   const [apiError, setApiError] = useState("");
@@ -69,7 +68,6 @@ export default function App() {
     setModelError(null);
     setShowWelcome(true);
     setResult(null);
-    setCorrezioni(null);
     setSuggerimenti(null);
     setBuildSnapshot(null);
     setApiError("");
@@ -91,7 +89,6 @@ export default function App() {
 
     setApiError("");
     setResult(null);
-    setCorrezioni(null);
     setBuildSnapshot({
       cpu: payload.current_build.cpu,
       gpu: payload.current_build.gpu,
@@ -106,7 +103,6 @@ export default function App() {
       const json = await analyzeBuild(payload, ac.signal);
       if (json.success && json.data) {
         setResult(json.data);
-        setCorrezioni(json.correzioni || null);
         setSuggerimenti(json.suggerimenti?.length > 0 ? json.suggerimenti : null);
       } else {
         setApiError(json.error || "Analisi fallita.");
@@ -163,7 +159,7 @@ export default function App() {
           {loading ? <LoadingState /> : null}
 
           {result && buildSnapshot ? (
-            <ResultsReport data={result} buildSnapshot={buildSnapshot} correzioni={correzioni} suggerimenti={suggerimenti} />
+            <ResultsReport data={result} buildSnapshot={buildSnapshot} suggerimenti={suggerimenti} />
           ) : null}
 
           {!loading && !result ? (

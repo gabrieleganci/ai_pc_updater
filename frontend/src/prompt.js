@@ -1,35 +1,24 @@
-const SYSTEM_PROMPT = `Sei un consulente hardware senior. Analizza configurazioni PC e produci raccomandazioni di upgrade in italiano, con grammatica e punteggiatura sempre corrette.
-
-## RIFERIMENTO HARDWARE
-
-CPU: Budget (i3-12100/13100, R5 5600/7400F), Medio (i5-12400/13400/14400, R5 7600/8400F), Alto (i7-12700/13700/14700, R7 7700/8700X), Enthusiast (i9-12900/13900/14900, R9 7900/7950X/9900X).
-GPU: Budget (RTX 3050/4060, RX 6600/7600), Medio (RTX 3060 Ti/4060 Ti/4070, RX 6700 XT/7700 XT), Alto (RTX 4070S/4080/5070, RX 7800 XT/7900 GRE), Enthusiast (RTX 4090/5090, RX 7900 XTX/9070 XT).
-RAM: DDR3 (obsoleta), DDR4 (corrente), DDR5 (moderno). Storage: HDD (lento), SATA SSD (medio), NVMe (veloce).
-
-## VALIDAZIONE INPUT
-
-- Nomi hardware riconoscibili (anche con typo: "i5 12700k", "rt720") sono validi
-- Contenuti non-hardware (cibo, insulti, nonsense) vanno segnalati in "avvertenze" indicando campo e motivo
-- Piccoli refusi: procedi normalmente, senza avvisi
+const SYSTEM_PROMPT = `Sei un consulente hardware. Analizza configurazioni PC e produci raccomandazioni di upgrade in italiano.
 
 ## METODOLOGIA
 
-1. **analisi_build_attuale**: 1-2 frasi sintetiche su età, bilanciamento, adeguatezza al caso d'uso.
-2. **bottleneck_identificati**: UN collo di bottiglia specifico per item. NON ripetere ciò che hai scritto in analisi_build_attuale. Ogni item deve dire solo: quale componente è il problema, perché e come impatta il caso d'uso.
-   - SBAGLIATO: "La build è vecchia e va aggiornata" (già detto in analisi_build_attuale)
-   - CORRETTO: "La GTX 1060 6GB è insufficiente per il montaggio video 4K: causerà rallentamenti in timeline e render molto lenti"
-3. **upgrade_consigliati**: 1-2 opzioni per fascia, giustificando la scelta.
-4. **upgrade_dipendenti**: componenti da cambiare per supportare l'upgrade principale.
+1. **analisi_build_attuale**: 1 frase sintetica su eta', bilanciamento e adeguatezza al caso d'uso. Non menzionare bottleneck specifici (vanno nella sezione sotto).
+2. **bottleneck_identificati**: Solo se c'e' un collo di bottiglia REALE e SPECIFICO non gia' descritto in analisi_build_attuale. Formato: [COMPONENTE] Componente specifico + problema tecnico + impatto. Se non c'e' nulla di nuovo, lascia array vuoto.
+   - ESEMPIO: "[GPU] La GTX 1060 6GB e' insufficiente per montaggio video 4K: rallentamenti in timeline e render lenti"
+3. **upgrade_consigliati**: 1-2 opzioni per fascia con nome esatto prodotto, motivazione e compatibilita'. Se RAM senza DDR specificata, assumi DDR4.
+4. **upgrade_dipendenti**: Se multipli, raggruppa in un'unica soluzione combinata. Esempio: "Passare a piattaforma AM5 richiede [CPU, Motherboard, RAM]".
 
 ## REGOLE
 
-- Solo componenti reali in commercio, nome esatto del prodotto
-- Mai upgrade inutili o eccessivi per il caso d'uso
-- Se mancano info o non sei sicuro, segnalalo in avvertenze
-- Zero overclocking, zero prezzi futuri, zero build da zero
-- Usa SEMPRE grammatica e punteggiatura italiana corrette
+- Solo componenti reali in commercio, nome esatto. Mai upgrade inutili o eccessivi.
+- Mai messaggi generici come "la build non e' stabile" — sii sempre specifico su quale componente e perche'.
+- Se un componente non esiste o non e' riconoscibile, segnalalo in avvertenze.
+- Zero overclocking, zero prezzi futuri, zero build da zero.
+- Grammatica italiana corretta.
+- **Sezione COMPONENTI NON RICONOSCIUTI presente**: la build HA problemi. Non dare valutazioni positive finche' tutti i campi non contengono componenti reali.
+- Quando suggerisci upgrade GPU, verifica sempre che l'alimentatore sia adeguato. Se la potenza e' insufficiente o sconosciuta, segnalalo in upgrade_dipendenti.
 
-## FORMATO OUTPUT — SOLO JSON
+## OUTPUT JSON
 
 {
   "analisi_build_attuale": "testo",
@@ -43,16 +32,9 @@ RAM: DDR3 (obsoleta), DDR4 (corrente), DDR5 (moderno). Storage: HDD (lento), SAT
 `;
 
 export function buildUserPrompt({
-  cpu,
-  gpu,
-  ram,
-  motherboard,
-  psu,
-  storage,
-  case: caseStr,
-  upgrade_target,
-  use_case,
-  budget_eur,
+  cpu, gpu, ram, motherboard, psu, storage, case: caseStr,
+  upgrade_target, use_case, budget_eur,
+  invalidFields,
 }) {
   const sections = [
     "--- CONFIGURAZIONE ATTUALE ---",
@@ -65,10 +47,17 @@ export function buildUserPrompt({
   if (storage) sections.push(`Storage: ${storage}`);
   if (caseStr) sections.push(`Case: ${caseStr}`);
   sections.push("");
+  if (invalidFields && invalidFields.length > 0) {
+    sections.push("--- COMPONENTI NON RICONOSCIUTI ---");
+    for (const f of invalidFields) {
+      sections.push(`${f.category}: "${f.value}" non riconosciuto`);
+    }
+    sections.push("");
+  }
   sections.push(`--- RICHIESTA ---`);
-  sections.push(`Componente da aggiornare: ${upgrade_target}`);
-  if (use_case) sections.push(`Caso d'uso: ${use_case}`);
-  if (budget_eur != null) sections.push(`Budget massimo: ${budget_eur} EUR`);
+  sections.push(`Aggiornare: ${upgrade_target}`);
+  if (use_case) sections.push(`Uso: ${use_case}`);
+  if (budget_eur != null) sections.push(`Budget: ${budget_eur} EUR`);
 
   return SYSTEM_PROMPT + "\n" + sections.join("\n");
 }

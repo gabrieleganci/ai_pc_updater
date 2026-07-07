@@ -16,13 +16,9 @@
 .card {
   padding: 1.25rem 1.35rem;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(0, 212, 255, 0.2);
   border-radius: var(--radius);
   transition: border-color var(--transition);
-}
-
-.card:hover {
-  border-color: rgba(0, 212, 255, 0.2);
 }
 
 .cardTitle {

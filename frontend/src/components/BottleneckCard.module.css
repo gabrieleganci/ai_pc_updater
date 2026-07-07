@@ -1,19 +1,25 @@
 .card {
   padding: 1.25rem 1.35rem;
   background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(245, 158, 11, 0.25);
   border-radius: var(--radius);
   transition: border-color var(--transition), box-shadow var(--transition);
-}
-
-.card:hover {
-  border-color: rgba(245, 158, 11, 0.25);
 }
 
 .title {
   margin: 0 0 1rem;
   font-size: 1rem;
   font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.titleIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+  color: var(--color-warning);
+  flex-shrink: 0;
 }
 
 .list {
@@ -22,7 +28,7 @@
   list-style: none;
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.75rem;
 }
 
 .row {
@@ -31,14 +37,34 @@
   align-items: flex-start;
   font-size: 0.92rem;
   color: var(--color-text);
+  line-height: 1.5;
 }
 
-.icon {
-  width: 1.1rem;
-  height: 1.1rem;
-  color: var(--color-warning);
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border: 1px solid;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
   flex-shrink: 0;
-  margin-top: 0.15rem;
+  margin-top: 0.1rem;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.tagIcon {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+.desc {
+  flex: 1;
+  min-width: 0;
 }
 
 .none {
