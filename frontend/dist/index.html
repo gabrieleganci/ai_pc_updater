@@ -21,42 +21,20 @@
           '</div></div>'
         );
       }
+      if (!window.crossOriginIsolated) {
+        document.write(
+          '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0b0d10;color:#e8eaed;font-family:sans-serif;padding:2rem;text-align:center">' +
+          '<div style="max-width:480px">' +
+          '<h1 style="font-size:1.5rem;margin-bottom:0.5rem">Cross-Origin Isolation richiesta</h1>' +
+          '<p style="color:#9aa0a6;line-height:1.5">PC Build Advisor richiede header HTTP specifici. Avvia con <code>npm run dev</code> dalla cartella <code>frontend/</code>.</p>' +
+          '</div></div>'
+        );
+      }
     </script>
-    <script type="module" crossorigin src="/assets/index-DYxGDTtj.js"></script>
-    <link rel="stylesheet" crossorigin href="/assets/index-BqxLS4iC.css">
+    <script type="module" crossorigin src="/assets/index-Coc6h8by.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-BzeQndCI.css">
   </head>
   <body>
-    <div id="root"></div>
-    <script>
-      (async function () {
-        function showError(title, detail) {
-          document.getElementById("root").innerHTML =
-            '<div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:#0b0d10;color:#e8eaed;font-family:sans-serif;padding:2rem;text-align:center">' +
-            '<div style="max-width:520px">' +
-            '<h1 style="font-size:1.5rem;margin-bottom:0.5rem">' + title + '</h1>' +
-            '<p style="color:#9aa0a6;line-height:1.5">' + detail + '</p>' +
-            '</div></div>';
-        }
-        if (!window.crossOriginIsolated) {
-          showError("Cross-Origin Isolation richiesta",
-            "PC Build Advisor richiede che il server invii gli header <code>Cross-Origin-Opener-Policy: same-origin</code> e <code>Cross-Origin-Embedder-Policy: require-corp</code>. Avvia con <code>npm run dev</code> o consulta il README."
-          );
-          return;
-        }
-        try {
-          const adapter = await navigator.gpu.requestAdapter();
-          if (!adapter) {
-            showError("GPU non disponibile",
-              "Il browser supporta WebGPU ma non è stata trovata una GPU compatibile. Verifica che i driver della scheda grafica siano aggiornati e che nessun'altra app stia usando intensamente la GPU."
-            );
-            return;
-          }
-        } catch (e) {
-          showError("WebGPU errore",
-            "WebGPU ha restituito un errore: " + e.message + ". Prova ad aggiornare il browser o reinstallare i driver GPU."
-          );
-        }
-      })();
-    </script>
+    <div id="root"></div>
   </body>
 </html>
