@@ -12,7 +12,7 @@ import { useMemo, useState } from "react";
 import { detectSystem } from "../detectSystem.js";
 import styles from "./BuildForm.module.css";
 
-const UPGRADE_OPTIONS = ["CPU", "GPU", "RAM", "Motherboard", "PSU"];
+const UPGRADE_OPTIONS = ["Auto", "CPU", "GPU", "RAM", "Motherboard", "PSU"];
 
 const FIELDS = [
   { key: "cpu", label: "CPU", icon: Cpu, required: true },

@@ -6,11 +6,12 @@
 
 ## Come funziona
 
-Inserisci le specifiche del tuo PC, seleziona il componente da aggiornare, e un modello AI (Gemma 2 2B) eseguito interamente nel browser via WebGPU genera un report con:
+Inserisci le specifiche del tuo PC, seleziona il componente da aggiornare (o "Auto" per rilevamento automatico bottleneck), e un modello AI (Gemma 2 2B) eseguito interamente nel browser via WebGPU genera un report con:
 
-- **Analisi compatibilità** — socket, TDP, spazio case, interfacce
-- **Rilevamento bottleneck** — CPU bound, GPU bound, RAM, storage
-- **Raccomandazioni motivate** — 2-3 opzioni per fascia budget/medio/alto
+- **Analisi locale client-side** — valutazione completa senza server: compatibilità, bottleneck, budget
+- **Raccomandazioni sempre visibili** — opzioni per ogni budget (basso/medio/alto), anche con componenti non riconosciuti
+- **Target Auto** — analizza CPU, GPU, RAM, Motherboard e suggerisce l'upgrade più impattante
+- **Rilevamento bottleneck** — CPU bound, GPU bound, RAM, storage, con scoring priorità
 - **Upgrade dipendenti** — componenti da cambiare per supportare l'upgrade
 - **Avvertenze** — rischi e informazioni mancanti
 
@@ -79,15 +80,17 @@ frontend/
     ├── main.jsx            # React mount
     ├── App.jsx             # Root component con model loading state
     ├── App.module.css      # Stili root
-    ├── api.js              # Orchestrazione: prompt → modello → validatore
+    ├── api.js              # Orchestrazione: analisi + LLM + validazione
+    ├── analyzer.js         # Analisi client-side: bottleneck, raccomandazioni, budget
+    ├── performance.js      # Database componenti (GPU_META, CPU_META, BUDGET_RANGES)
     ├── detectSystem.js     # Rilevamento hardware browser (CPU/GPU/RAM)
     ├── llm.js              # WebLLM engine (caricamento + inferenza WebGPU)
-    ├── prompt.js           # Prompt di sistema professionale (italiano)
+    ├── prompt.js           # Prompt LLM ottimizzato (formato compatto)
     ├── validators.js       # Validatore JSON output AI
     ├── worker.js           # Web Worker MLCEngine
     ├── styles/global.css   # Design tokens (dark theme)
     └── components/
-        ├── BuildForm.jsx           # Form input configurazione
+        ├── BuildForm.jsx           # Form input + selezione target Auto
         ├── LoadingState.jsx        # Stato analisi in corso
         ├── ModelLoadingScreen.jsx  # Schermata download modello
         ├── ResultsReport.jsx       # Report risultati
@@ -111,11 +114,14 @@ frontend/
 ### Flusso dati
 
 ```
-BuildForm → api.js → prompt.js (costruisce prompt)
+BuildForm → api.js → analyzer.js (analisi client-side: bottleneck, budget, compatibilità)
+                    → prompt.js (compatta: top bottleneck + top rec per categoria)
                     → llm.js (inferenza WebGPU su Gemma 2 2B)
                     → validators.js (valida output JSON)
                     → ResultsReport (render risultati)
 ```
+
+L'analisi locale (`analyzer.js`) produce 4 sezioni: bottleneck, raccomandazioni upgrade, upgrade dipendenti, avvertenze. Il prompt LLM è ottimizzato per velocità — passa solo i top 2 bottleneck e top 1 raccomandazione per categoria, il resto resta locale.
 
 ### Tecnologie
 

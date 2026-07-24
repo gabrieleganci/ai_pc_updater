@@ -82,11 +82,35 @@ function formatFascia(tier) {
 
 function getGpuRecommendations(build, budgetEur, useCaseKey) {
   const oldGpuMeta = getGpuMeta(build.gpu);
-  if (!oldGpuMeta) return [];
 
   const useCaseReq = useCaseKey ? USECASE_RECOMMENDATIONS[useCaseKey] : null;
   const appMinTier = useCaseReq ? useCaseReq.gpuTier[0] : 0;
   const scorer = useCaseKey && GPU_SCENARIO_SCORERS[useCaseKey] ? (m) => GPU_SCENARIO_SCORERS[useCaseKey](m) : (m) => m.tier;
+
+  if (!oldGpuMeta) {
+    let targetTier;
+    const bValid = budgetEur != null && budgetEur !== "";
+    if (bValid) {
+      const n = Number(budgetEur);
+      const range = BUDGET_RANGES.GPU.find(r => n <= r.max) || BUDGET_RANGES.GPU[BUDGET_RANGES.GPU.length - 1];
+      targetTier = Math.round((range.tiers[0] + range.tiers[1]) / 2);
+    } else if (useCaseReq) {
+      targetTier = Math.round((useCaseReq.gpuTier[0] + useCaseReq.gpuTier[1]) / 2);
+    } else {
+      targetTier = 50;
+    }
+    const popular = Object.entries(GPU_META)
+      .filter(([_, m]) => Math.abs(m.tier - targetTier) <= 15)
+      .map(([name, meta]) => [name, meta, scorer(meta)])
+      .sort((a, b) => b[2] - a[2])
+      .slice(0, 2);
+    return popular.map(([name, meta]) => ({
+      nome: name,
+      fascia: formatFascia(meta.tier),
+      motivazione: `GPU consigliata per la tua configurazione (tier ${meta.tier}). La GPU attuale non è stata riconosciuta.`,
+      compatibilita: `Slot PCIe x16. PSU minima ${meta.minPsu}W.`,
+    }));
+  }
 
   let tierMin, tierMax;
   const bValid = budgetEur != null && budgetEur !== "";
@@ -99,12 +123,9 @@ function getGpuRecommendations(build, budgetEur, useCaseKey) {
     tierMin = Math.max(oldGpuMeta.tier + 15, appMinTier);
     tierMax = 100;
   }
-  tierMin = Math.max(tierMin, oldGpuMeta.tier + 10);
-
   const scored = Object.entries(GPU_META)
-    .filter(([_, m]) => m.tier >= tierMin && m.tier <= tierMax)
+    .filter(([_, m]) => m.tier >= tierMin && m.tier <= tierMax && m.tier > oldGpuMeta.tier)
     .map(([name, meta]) => [name, meta, scorer(meta)])
-    .filter(([_, meta, s]) => meta.tier - oldGpuMeta.tier >= 10)
     .sort((a, b) => b[2] - a[2])
     .slice(0, 4);
 
@@ -126,28 +147,63 @@ function getGpuRecommendations(build, budgetEur, useCaseKey) {
 
   if (options.length === 0) {
     const fallback = Object.entries(GPU_META)
-      .filter(([_, m]) => m.tier > oldGpuMeta.tier && m.tier - oldGpuMeta.tier >= 8)
+      .filter(([_, m]) => m.tier > oldGpuMeta.tier)
       .map(([name, meta]) => [name, meta, scorer(meta)])
       .sort((a, b) => b[2] - a[2]);
     for (const [name, meta] of fallback) {
       options.push({
         nome: name,
         fascia: formatFascia(meta.tier),
-        motivazione: `Upgrade graduale (tier ${oldGpuMeta.tier} → ${meta.tier}).`,
+        motivazione: `Upgrade (tier ${oldGpuMeta.tier} → ${meta.tier}).`,
         compatibilita: `Slot PCIe x16. PSU minima ${meta.minPsu}W.`,
       });
     }
     if (options.length > 2) options.length = 2;
   }
+
+  if (options.length === 0) {
+    options.push({
+      nome: build.gpu,
+      fascia: formatFascia(oldGpuMeta.tier),
+      motivazione: `La ${build.gpu} (tier ${oldGpuMeta.tier}) è già una delle GPU più performanti disponibili. Nessun upgrade significativo al momento.`,
+      compatibilita: "La configurazione GPU attuale è già ottimale.",
+    });
+  }
+
   return options;
 }
 
 function getCpuRecommendations(build, budgetEur, useCaseKey) {
   const oldCpuMeta = getCpuMeta(build.cpu);
-  if (!oldCpuMeta) return [];
 
   const useCaseReq = useCaseKey ? USECASE_RECOMMENDATIONS[useCaseKey] : null;
   const budgetCpu = budgetEur != null && budgetEur !== "" ? Number(budgetEur) : null;
+
+  if (!oldCpuMeta) {
+    let targetTier;
+    if (budgetCpu != null) {
+      const range = BUDGET_RANGES.CPU.find(r => budgetCpu <= r.max) || BUDGET_RANGES.CPU[BUDGET_RANGES.CPU.length - 1];
+      targetTier = Math.round((range.tiers[0] + range.tiers[1]) / 2);
+    } else if (useCaseReq) {
+      targetTier = Math.round((useCaseReq.cpuTier[0] + useCaseReq.cpuTier[1]) / 2);
+    } else {
+      targetTier = 55;
+    }
+    const scorer = useCaseKey && CPU_SCENARIO_SCORERS[useCaseKey]
+      ? (meta, name) => CPU_SCENARIO_SCORERS[useCaseKey](meta, name)
+      : (meta, name) => meta.tier;
+    const popular = Object.entries(CPU_META)
+      .filter(([_, m]) => Math.abs(m.tier - targetTier) <= 15)
+      .map(([name, meta]) => [name, meta, scorer(meta, name)])
+      .sort((a, b) => b[2] - a[2])
+      .slice(0, 2);
+    return popular.map(([name, meta]) => ({
+      nome: name,
+      fascia: formatFascia(meta.tier),
+      motivazione: `CPU consigliata per la tua configurazione (tier ${meta.tier}). La CPU attuale non è stata riconosciuta.`,
+      compatibilita: `Socket ${meta.socket}. Verifica compatibilità con la motherboard.`,
+    }));
+  }
 
   let tierMin, tierMax;
   if (budgetCpu != null) {
@@ -158,20 +214,19 @@ function getCpuRecommendations(build, budgetEur, useCaseKey) {
     tierMin = Math.max(oldCpuMeta.tier + 15, useCaseReq?.cpuTier[0] || 0);
     tierMax = 100;
   }
-  tierMin = Math.max(tierMin, oldCpuMeta.tier + 10);
 
   const scorer = useCaseKey && CPU_SCENARIO_SCORERS[useCaseKey]
     ? (meta, name) => CPU_SCENARIO_SCORERS[useCaseKey](meta, name)
     : (meta, name) => meta.tier;
 
   const sameSocket = Object.entries(CPU_META)
-    .filter(([_, m]) => m.socket === oldCpuMeta.socket && m.tier >= tierMin && m.tier <= tierMax)
+    .filter(([_, m]) => m.socket === oldCpuMeta.socket && m.tier >= tierMin && m.tier <= tierMax && m.tier > oldCpuMeta.tier)
     .map(([name, meta]) => [name, meta, scorer(meta, name)])
     .sort((a, b) => b[2] - a[2]);
 
   const candidates = sameSocket.length > 0 ? sameSocket
     : Object.entries(CPU_META)
-        .filter(([_, m]) => m.tier >= tierMin && m.tier <= tierMax)
+        .filter(([_, m]) => m.tier >= tierMin && m.tier <= tierMax && m.tier > oldCpuMeta.tier)
         .map(([name, meta]) => [name, meta, scorer(meta, name)])
         .sort((a, b) => b[2] - a[2]);
 
@@ -189,6 +244,35 @@ function getCpuRecommendations(build, budgetEur, useCaseKey) {
     });
     if (options.length >= 2) break;
   }
+
+  if (options.length === 0) {
+    const fallback = Object.entries(CPU_META)
+      .filter(([_, m]) => m.tier > oldCpuMeta.tier)
+      .map(([name, meta]) => [name, meta, scorer(meta, name)])
+      .sort((a, b) => b[2] - a[2]);
+    for (const [name, meta] of fallback) {
+      const sameSock = meta.socket === oldCpuMeta.socket;
+      options.push({
+        nome: name,
+        fascia: formatFascia(meta.tier),
+        motivazione: `Upgrade (tier ${oldCpuMeta.tier} → ${meta.tier}).${sameSock ? " Stesso socket." : " Richiede cambio piattaforma."}`,
+        compatibilita: sameSock
+          ? `Socket ${oldCpuMeta.socket}. Verifica aggiornamento BIOS.`
+          : `Richiede motherboard socket ${meta.socket} e RAM DDR${meta.ddr}.`,
+      });
+    }
+    if (options.length > 2) options.length = 2;
+  }
+
+  if (options.length === 0) {
+    options.push({
+      nome: build.cpu,
+      fascia: formatFascia(oldCpuMeta.tier),
+      motivazione: `La ${build.cpu} (tier ${oldCpuMeta.tier}) è già una delle CPU più performanti disponibili. Nessun upgrade significativo al momento.`,
+      compatibilita: "La configurazione CPU attuale è già ottimale.",
+    });
+  }
+
   return options;
 }
 
@@ -199,7 +283,7 @@ function getMotherboardRecommendations(build, budgetEur, cpuMeta) {
   const socket = cpuMeta.socket;
 
   const available = getSocketChipsets(socket);
-  const candidates = available.filter(([name, meta]) => meta.tier > currentTier + 8);
+  const candidates = available.filter(([name, meta]) => meta.tier > currentTier + 3);
 
   const options = [];
   for (const [name, meta] of candidates) {
@@ -212,7 +296,29 @@ function getMotherboardRecommendations(build, budgetEur, cpuMeta) {
     });
     if (options.length >= 2) break;
   }
+
+  if (options.length === 0) {
+    const topChipset = available[0];
+    if (topChipset) {
+      const [name, meta] = topChipset;
+      options.push({
+        nome: `Motherboard ${name} (Socket ${socket}, DDR${meta.ddr}, PCIe ${meta.pcie}.0)`,
+        fascia: meta.tier >= 65 ? "alto" : meta.tier >= 40 ? "medio" : "budget",
+        motivazione: `La tua motherboard attuale (${chipset?.chipset || "non riconosciuta"}) è già tra le migliori per questo socket. Nessun upgrade significativo.`,
+        compatibilita: `Socket ${socket}. Verifica formato ATX/mATX/ITX.`,
+      });
+    }
+  }
+
   return options;
+}
+
+function estimatedLoad(cpuTdp, gpuTdp) {
+  return (cpuTdp || 125) + (gpuTdp || 200) + 100;
+}
+
+function getGpuMetaFromList(name) {
+  return getGpuMeta(name);
 }
 
 export function analyzeBuildLocal(build, upgradeTarget, useCase, budgetEur, invalidFields) {
@@ -279,6 +385,71 @@ export function analyzeBuildLocal(build, upgradeTarget, useCase, budgetEur, inva
   const hasGpuBottleneck = bottlenecks.some(b => b.startsWith("[GPU]"));
 
   // --- Upgrade Recommendations ---
+  if (upgradeTarget === "Auto") {
+    const scoredTargets = [];
+
+    if (cpuMeta && gpuMeta) {
+      const cpuGpuGap = gpuMeta.tier - cpuMeta.tier;
+      if (cpuGpuGap > 10) {
+        scoredTargets.push({ target: "CPU", score: cpuGpuGap, reason: `CPU (${cpuMeta.tier}) debole rispetto alla GPU (${gpuMeta.tier})` });
+      } else if (cpuGpuGap < -10) {
+        scoredTargets.push({ target: "GPU", score: Math.abs(cpuGpuGap), reason: `GPU (${gpuMeta.tier}) debole rispetto alla CPU (${cpuMeta.tier})` });
+      }
+    }
+
+    if (useCaseKey && gpuMeta) {
+      const req = USECASE_RECOMMENDATIONS[useCaseKey];
+      if (gpuMeta.tier < req.gpuTier[0]) {
+        scoredTargets.push({ target: "GPU", score: req.gpuTier[0] - gpuMeta.tier + 20, reason: `GPU sotto il minimo per "${useCase}"` });
+      }
+      if (cpuMeta && cpuMeta.tier < req.cpuTier[0]) {
+        scoredTargets.push({ target: "CPU", score: req.cpuTier[0] - cpuMeta.tier + 20, reason: `CPU sotto il minima per "${useCase}"` });
+      }
+    }
+
+    if (psuW != null && gpuMeta && psuW < gpuMeta.minPsu) {
+      scoredTargets.push({ target: "PSU", score: 30, reason: `PSU da ${psuW}W insufficiente per la GPU (min ${gpuMeta.minPsu}W)` });
+    }
+
+    if (cpuMeta && cpuMeta.year <= 2015) {
+      scoredTargets.push({ target: "CPU", score: 25, reason: `CPU datata (${cpuMeta.year})` });
+    }
+    if (gpuMeta && gpuMeta.year <= 2016) {
+      scoredTargets.push({ target: "GPU", score: 25, reason: `GPU datata (${gpuMeta.year})` });
+    }
+
+    scoredTargets.sort((a, b) => b.score - a.score);
+
+    const seen = new Set();
+    for (const { target, reason } of scoredTargets) {
+      if (seen.has(target)) continue;
+      seen.add(target);
+      if (target === "GPU") {
+        const opts = getGpuRecommendations(build, budgetEur, useCaseKey);
+        if (opts.length > 0) upgradeCategories.push({ componente: "GPU", opzioni: opts });
+      } else if (target === "CPU") {
+        const opts = getCpuRecommendations(build, budgetEur, useCaseKey);
+        if (opts.length > 0) upgradeCategories.push({ componente: "CPU", opzioni: opts });
+      } else if (target === "PSU") {
+        const gpuMin = gpuMeta?.minPsu || 650;
+        const cpuTdp = cpuMeta?.tdp || 125;
+        const recommended = Math.max(gpuMin, cpuTdp + 300, 650);
+        upgradeCategories.push({
+          componente: "PSU", opzioni: [
+            { nome: `Alimentatore ${recommended}W 80+ Gold modulare`, fascia: "medio", motivazione: `${reason}. Potenza adeguata per GPU (min ${gpuMin}W) e CPU (${cpuTdp}W).`, compatibilita: "Verifica formato ATX/SFX e spazio nel case." },
+          ],
+        });
+      }
+    }
+
+    if (upgradeCategories.length === 0) {
+      const gpuOpts = getGpuRecommendations(build, budgetEur, useCaseKey);
+      if (gpuOpts.length > 0) upgradeCategories.push({ componente: "GPU", opzioni: gpuOpts });
+      const cpuOpts = getCpuRecommendations(build, budgetEur, useCaseKey);
+      if (cpuOpts.length > 0) upgradeCategories.push({ componente: "CPU", opzioni: cpuOpts });
+    }
+  }
+
   if (upgradeTarget === "GPU") {
     const options = getGpuRecommendations(build, budgetEur, useCaseKey);
     if (options.length > 0) {
@@ -296,7 +467,7 @@ export function analyzeBuildLocal(build, upgradeTarget, useCase, budgetEur, inva
         });
       }
     }
-    if (cpuMeta && gpuMeta && gpuMeta.tier - cpuMeta.tier > 20) {
+    if (cpuMeta && gpuMeta && gpuMeta.tier - cpuMeta.tier > 12) {
       const cpuOpts = getCpuRecommendations(build, null, useCaseKey);
       if (cpuOpts.length > 0) {
         upgradeCategories.push({ componente: "CPU", opzioni: cpuOpts.slice(0, 1) });
@@ -309,7 +480,7 @@ export function analyzeBuildLocal(build, upgradeTarget, useCase, budgetEur, inva
     if (options.length > 0) {
       upgradeCategories.push({ componente: "CPU", opzioni: options });
     }
-    if (cpuMeta && gpuMeta && cpuMeta.tier - gpuMeta.tier > 15) {
+    if (cpuMeta && gpuMeta && cpuMeta.tier - gpuMeta.tier > 10) {
       const gpuOpts = getGpuRecommendations(build, budgetEur, useCaseKey);
       if (gpuOpts.length > 0) {
         upgradeCategories.push({ componente: "GPU", opzioni: gpuOpts.slice(0, 1) });
@@ -347,13 +518,46 @@ export function analyzeBuildLocal(build, upgradeTarget, useCase, budgetEur, inva
     }
   }
 
-function estimatedLoad(cpuTdp, gpuTdp) {
-  return (cpuTdp || 125) + (gpuTdp || 200) + 100;
-}
-
-function getGpuMetaFromList(name) {
-  return getGpuMeta(name);
-}
+  // --- Safety net: target must always have at least one recommendation ---
+  if (upgradeTarget && !upgradeCategories.some(c => c.componente === upgradeTarget)) {
+    const fallbackCategories = {
+      GPU: () => {
+        const top = Object.entries(GPU_META).sort((a, b) => b[1].tier - a[1].tier).slice(0, 2);
+        return top.map(([name, meta]) => ({
+          nome: name,
+          fascia: formatFascia(meta.tier),
+          motivazione: `GPU consigliata (tier ${meta.tier}).${gpuMeta ? ` Attuale ${build.gpu} (tier ${gpuMeta.tier}).` : " GPU attuale non riconosciuta."}`,
+          compatibilita: `Slot PCIe x16. PSU minima ${meta.minPsu}W.`,
+        }));
+      },
+      CPU: () => {
+        const top = Object.entries(CPU_META).sort((a, b) => b[1].tier - a[1].tier).slice(0, 2);
+        return top.map(([name, meta]) => ({
+          nome: name,
+          fascia: formatFascia(meta.tier),
+          motivazione: `CPU consigliata (tier ${meta.tier}).${cpuMeta ? ` Attuale ${build.cpu} (tier ${cpuMeta.tier}).` : " CPU attuale non riconosciuta."}`,
+          compatibilita: `Socket ${meta.socket}. Verifica compatibilità con la motherboard.`,
+        }));
+      },
+      Motherboard: () => {
+        if (!cpuMeta) return [];
+        const top = getSocketChipsets(cpuMeta.socket).slice(0, 2);
+        return top.map(([name, meta]) => ({
+          nome: `Motherboard ${name} (Socket ${cpuMeta.socket}, DDR${meta.ddr}, PCIe ${meta.pcie}.0)`,
+          fascia: meta.tier >= 65 ? "alto" : meta.tier >= 40 ? "medio" : "budget",
+          motivazione: `Chipset ${name} (tier ${meta.tier}).${build.motherboard ? ` Attuale: ${build.motherboard}.` : " Motherboard attuale non riconosciuta."}`,
+          compatibilita: `Socket ${cpuMeta.socket}. Verifica formato ATX/mATX/ITX.`,
+        }));
+      },
+    };
+    const fallbackFn = fallbackCategories[upgradeTarget];
+    if (fallbackFn) {
+      const fbOptions = fallbackFn();
+      if (fbOptions.length > 0) {
+        upgradeCategories.push({ componente: upgradeTarget, opzioni: fbOptions });
+      }
+    }
+  }
 
   // --- Dependent Upgrades ---
   const upgradingGpu = upgradeTarget === "GPU" || upgradeCategories.some(c => c.componente === "GPU");
@@ -429,7 +633,8 @@ function getGpuMetaFromList(name) {
     assessment = `Configurazione con componenti non completamente riconosciuti. Verifica i nomi inseriti.`;
   }
 
-  if (useCase) assessment += ` Target: "${useCase}".`;
+  if (upgradeTarget) assessment += ` Target upgrade: ${upgradeTarget}.`;
+  if (useCase) assessment += ` Uso previsto: "${useCase}".`;
 
   return {
     analisi_build_attuale: assessment,
